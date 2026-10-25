@@ -1,0 +1,118 @@
+name: ecommerce
+
+services:
+  # ---------------- Base de datos ----------------
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    expose:
+      - "3306"
+    networks:
+      - db-net
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------- API Laravel (PHP-FPM) ----------------
+  backend:
+    build:
+      context: ./backend
+      target: app
+    image: ecommerce-backend:1.0
+    restart: unless-stopped
+    environment:
+      APP_NAME: ${APP_NAME}
+      APP_ENV: ${APP_ENV}
+      APP_DEBUG: ${APP_DEBUG}
+      APP_URL: ${APP_URL}
+      APP_KEY: ${APP_KEY:?Define APP_KEY en .env}
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+      STRIPE_KEY: ${STRIPE_KEY}
+      STRIPE_SECRET: ${STRIPE_SECRET}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_CURRENCY: ${STRIPE_CURRENCY:-usd}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    networks:
+      - db-net
+      - app-net
+
+  # ---------------- Nginx (proxy de la API) ----------------
+  backend-nginx:
+    build:
+      context: ./backend
+      target: nginx
+    image: ecommerce-nginx:1.0
+    restart: unless-stopped
+    ports:
+      - "8000:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs:
+      - /tmp
+    networks:
+      - app-net
+
+  # ---------------- Frontend Next.js ----------------
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${STRIPE_KEY}
+    image: ecommerce-frontend:1.0
+    restart: unless-stopped
+    environment:
+      # Dirección INTERNA de la API (nombre del servicio, no 127.0.0.1)
+      API_URL: http://backend-nginx:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend-nginx:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache:uid=1001,gid=1001
+    networks:
+      - app-net
+
+volumes:
+  db_data:
+
+networks:
+  app-net:
+  db-net:
+    internal: true

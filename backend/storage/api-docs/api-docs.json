@@ -1,0 +1,514 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API de E-commerce Segura con Swagger Completo",
+        "description": "API RESTful para la gestion de clientes, catalogo de productos, ordenes de compra y procesamiento de pagos mediante Stripe. Construida con Laravel 12 y autenticacion basada en tokens (Sanctum).",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://127.0.0.1:8000/api",
+            "description": "Servidor de la API"
+        }
+    ],
+    "paths": {
+        "/register": {
+            "post": {
+                "tags": [
+                    "Autenticacion"
+                ],
+                "summary": "Registrar un nuevo cliente",
+                "operationId": "5d4fa5d5607ed675ba93907e1fc94534",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "password",
+                                    "password_confirmation"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Cliente Prueba"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "prueba@correo.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "12345678"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "example": "12345678"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "70001234"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "San Salvador"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Cliente registrado exitosamente"
+                    },
+                    "422": {
+                        "description": "Error de validacion"
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "tags": [
+                    "Autenticacion"
+                ],
+                "summary": "Iniciar sesion y obtener un token de acceso",
+                "operationId": "67d6d0fdd54fba132e1b6f55ca254183",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "prueba@correo.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "12345678"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Autenticacion exitosa"
+                    },
+                    "401": {
+                        "description": "Credenciales invalidas"
+                    },
+                    "422": {
+                        "description": "Error de validacion"
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "post": {
+                "tags": [
+                    "Autenticacion"
+                ],
+                "summary": "Cerrar sesion (revoca el token actual)",
+                "operationId": "28d48c13fca984400ac8de99f54ee13a",
+                "responses": {
+                    "200": {
+                        "description": "Sesion cerrada exitosamente"
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/me": {
+            "get": {
+                "tags": [
+                    "Autenticacion"
+                ],
+                "summary": "Obtener el perfil del usuario autenticado",
+                "operationId": "bc2032a379aa97707ccc61511897c120",
+                "responses": {
+                    "200": {
+                        "description": "Perfil del usuario"
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/orders": {
+            "get": {
+                "tags": [
+                    "Ordenes"
+                ],
+                "summary": "Historial de compras del cliente autenticado",
+                "operationId": "8f3183bfa0ecb8a2c864cbf972b8061d",
+                "responses": {
+                    "200": {
+                        "description": "Listado de ordenes del usuario"
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Ordenes"
+                ],
+                "summary": "Crear una orden de compra y generar el intento de pago en Stripe",
+                "operationId": "b6490f9d9026dbe871b41207e118fffb",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "items"
+                                ],
+                                "properties": {
+                                    "shipping_address": {
+                                        "type": "string",
+                                        "example": "Colonia Escalon, San Salvador"
+                                    },
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "product_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "quantity": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Orden creada. Incluye el client_secret de Stripe"
+                    },
+                    "422": {
+                        "description": "Error de validacion o stock insuficiente"
+                    },
+                    "402": {
+                        "description": "Error al procesar el pago con Stripe"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/orders/{id}": {
+            "get": {
+                "tags": [
+                    "Ordenes"
+                ],
+                "summary": "Consultar el detalle de una orden propia",
+                "operationId": "79c1e32fc3603170dfd7659562133aeb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle de la orden"
+                    },
+                    "403": {
+                        "description": "No autorizado para ver esta orden"
+                    },
+                    "404": {
+                        "description": "Orden no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/payments/{order}/status": {
+            "get": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Consultar el estado del pago de una orden directamente en Stripe",
+                "operationId": "622acc7e763adcdcf4a599c10cf6b7de",
+                "parameters": [
+                    {
+                        "name": "order",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Estado actual del pago"
+                    },
+                    "403": {
+                        "description": "No autorizado"
+                    },
+                    "404": {
+                        "description": "Orden o pago no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/payments/webhook": {
+            "post": {
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Webhook de Stripe para eventos de pago",
+                "operationId": "d4f19bf65ca619a0344ecaaba65c55a8",
+                "responses": {
+                    "200": {
+                        "description": "Evento procesado"
+                    },
+                    "400": {
+                        "description": "Firma del webhook invalida"
+                    }
+                }
+            }
+        },
+        "/products": {
+            "get": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Listar catalogo de productos (acceso publico)",
+                "operationId": "080f057905dc32d2f11065d606dc4cd6",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Buscar por nombre",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Resultados por pagina (entre 1 y 50)",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15,
+                            "maximum": 50,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Listado paginado de productos activos"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Crear un nuevo producto (requiere administrador)",
+                "operationId": "eddf8c7847239ddc1040daadd814e21b",
+                "responses": {
+                    "201": {
+                        "description": "Producto creado"
+                    },
+                    "403": {
+                        "description": "No autorizado"
+                    },
+                    "422": {
+                        "description": "Error de validacion"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/products/{id}": {
+            "get": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Obtener el detalle de un producto",
+                "operationId": "b5099368868dbe7900acd129345eb148",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle del producto"
+                    },
+                    "404": {
+                        "description": "Producto no encontrado"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Actualizar un producto (requiere administrador)",
+                "operationId": "2ce632b9d1c0c445557821d09add7ec2",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Producto actualizado"
+                    },
+                    "403": {
+                        "description": "No autorizado"
+                    },
+                    "404": {
+                        "description": "Producto no encontrado"
+                    },
+                    "422": {
+                        "description": "Error de validacion"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Productos"
+                ],
+                "summary": "Eliminar un producto (requiere administrador)",
+                "operationId": "76bb7dc4ab3fc3233d5b33ef58e95d7d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Producto eliminado"
+                    },
+                    "403": {
+                        "description": "No autorizado"
+                    },
+                    "404": {
+                        "description": "Producto no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "sanctum": {
+                "type": "http",
+                "description": "Introduzca el token con el formato: Bearer {token}",
+                "bearerFormat": "Token",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Autenticacion",
+            "description": "Registro, login y logout de clientes"
+        },
+        {
+            "name": "Productos",
+            "description": "Catalogo de productos"
+        },
+        {
+            "name": "Ordenes",
+            "description": "Creacion y consulta de ordenes de compra"
+        },
+        {
+            "name": "Pagos",
+            "description": "Procesamiento de pagos mediante Stripe"
+        }
+    ]
+}
